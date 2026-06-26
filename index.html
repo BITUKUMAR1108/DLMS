@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <title>DLMS</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --card: #16213e;
+      --accent: #e94560;
+      --accent2: #0f3460;
+      --gold: #f5a623;
+      --green: #2ecc71;
+      --red: #e74c3c;
+      --text: #eaeaea;
+      --muted: #8892a4;
+      --border: #2a2a4a;
+      --radius: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* TOP NAV */
+    .topbar {
+      background: var(--surface);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar h1 { font-size: 18px; font-weight: 700; color: var(--accent); }
+    .topbar span { font-size: 12px; color: var(--muted); }
+
+    /* BOTTOM NAV */
+    .bottomnav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 12px 4px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.2s;
+    }
+    .nav-btn.active { color: var(--accent); }
+    .nav-btn svg { width: 22px; height: 22px; }
+
+    /* PAGES */
+    .page { display: none; padding: 16px; }
+    .page.active { display: block; }
+
+    /* CARDS */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    /* STATS ROW */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-card .num { font-size: 28px; font-weight: 700; color: var(--accent); }
+    .stat-card .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ROOM GRID */
+    .floor-title {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 16px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .room-tile {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .room-tile.occupied { border-color: var(--accent); background: #1e0f18; }
+    .room-tile.full { border-color: var(--red); background: #1e0808; }
+    .room-tile.vacant { border-color: var(--green); background: #081e0f; }
+    .room-tile .rnum { font-size: 16px; font-weight: 700; }
+    .room-tile .rtype { font-size: 10px; color: var(--muted); }
+    .room-tile .rcap { font-size: 10px; margin-top: 2px; }
+    .room-tile.occupied .rcap { color: var(--gold); }
+    .room-tile.full .rcap { color: var(--red); }
+    .room-tile.vacant .rcap { color: var(--green); }
+
+    /* BUTTONS */
+    .btn {
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    .btn:active { opacity: 0.8; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-secondary { background: var(--accent2); color: white; }
+    .btn-success { background: var(--green); color: white; }
+    .btn-warning { background: var(--gold); color: #000; }
+    .btn-danger { background: var(--red); color: white; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+    /* FORM */
+    .form-group { margin-bottom: 14px; }
+    .form-group label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: block; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--accent);
+    }
+    .form-group select option { background: var(--bg); }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      overflow-y: auto;
+      padding: 20px 16px 100px;
+    }
+    .modal-overlay.open { display: block; }
+    .modal {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 20px;
+      max-width: 500px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+    }
+    .modal-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--accent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    /* STUDENT LIST */
+    .student-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .student-card:active { border-color: var(--accent); }
+    .student-card .sname { font-size: 15px; font-weight: 600; }
+    .student-card .sinfo { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .student-card .sbadge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+    .badge-due { background: #3e1a1a; color: var(--red); }
+    .badge-paid { background: #0e2e1a; color: var(--green); }
+    .badge-left { background: #2a2a2a; color: var(--muted); }
+
+    /* SEARCH */
+    .search-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      color: var(--text);
+      font-size: 14px;
+      width: 100%;
+      margin-bottom: 14px;
+      outline: none;
+    }
+    .search-box:focus { border-color: var(--accent); }
+
+    /* RENT HISTORY */
+    .rent-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .rent-item:last-child { border-bottom: none; }
+    .rent-amount { color: var(--green); font-weight: 600; }
+
+    /* SECTION TITLE */
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    /* ALERT */
+    .alert {
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .alert-warning { background: #2e2000; border: 1px solid var(--gold); color: var(--gold); }
+    .alert-success { background: #002e10; border: 1px solid var(--green); color: var(--green); }
+
+    /* TABS */
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* DIVIDER */
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    .text-muted { color: var(--muted); font-size: 13px; }
+    .text-gold { color: var(--gold); }
+    .text-green { color: var(--green); }
+    .text-red { color: var(--red); }
+    .mt8 { margin-top: 8px; }
+    .mt16 { margin-top: 16px; }
+    .flex-row { display: flex; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <h1>🏠 DLMS</h1>
+    <div style="font-size:10px;color:var(--muted);line-height:1.2;">Defence Lodge<br>Management System</div>
+    <span id="topbar-date"></span>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:13px;color:var(--gold)" id="topbar-occupancy"></div>
+  </div>
+</div>
+
+<!-- PAGES -->
+
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="num" id="stat-occupied">0</div>
+      <div class="lbl">Occupied Rooms</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="stat-vacant">0</div>
+      <div class="lbl">Vacant Rooms</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="stat-students">0</div>
+      <div class="lbl">Total Students</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="stat-income">₹0</div>
+      <div class="lbl">This Month</div>
+    </div>
+  </div>
+
+  <div id="due-alerts"></div>
+
+  <div class="section-title">Quick Actions</div>
+  <button class="btn btn-primary" onclick="openAddStudent()">+ Add New Student</button>
+  <button class="btn btn-secondary" onclick="openGuestCharge()">+ Guest Charge (₹100)</button>
+
+  <div class="floor-title">1st Floor</div>
+  <div class="room-grid" id="floor1-grid"></div>
+
+  <div class="floor-title">2nd Floor</div>
+  <div class="room-grid" id="floor2-grid"></div>
+</div>
+
+<!-- STUDENTS PAGE -->
+<div class="page" id="page-students">
+  <div class="tabs">
+    <button class="tab active" onclick="filterStudents('active', this)">Active</button>
+    <button class="tab" onclick="filterStudents('paid', this)">Rent Paid</button>
+    <button class="tab" onclick="filterStudents('due', this)">Rent Due</button>
+  </div>
+  <input class="search-box" placeholder="🔍 Search student..." oninput="searchStudents(this.value)" />
+  <div id="student-list"></div>
+</div>
+
+<!-- RENT PAGE -->
+<div class="page" id="page-rent">
+  <div class="section-title">Rent Collection</div>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="num text-green" id="rent-collected">₹0</div>
+      <div class="lbl">Collected This Month</div>
+    </div>
+    <div class="stat-card">
+      <div class="num text-red" id="rent-pending">₹0</div>
+      <div class="lbl">Pending</div>
+    </div>
+  </div>
+  <div class="section-title mt16">Due This Month</div>
+  <div id="rent-due-list"></div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="page-settings">
+  <div class="section-title">Settings</div>
+  <div class="card">
+    <div class="flex-row">
+      <span>Default S Room Rent</span>
+      <span class="text-gold">₹<span id="setting-srent">1700</span></span>
+    </div>
+    <button class="btn btn-outline mt8" onclick="editSetting('srent')">Edit</button>
+  </div>
+  <div class="card">
+    <div class="flex-row">
+      <span>Default D Room Rent</span>
+      <span class="text-gold">₹<span id="setting-drent">2400</span></span>
+    </div>
+    <button class="btn btn-outline mt8" onclick="editSetting('drent')">Edit</button>
+  </div>
+  <div class="card">
+    <div class="flex-row">
+      <span>Guest Charge/Night</span>
+      <span class="text-gold">₹<span id="setting-guest">100</span></span>
+    </div>
+    <button class="btn btn-outline mt8" onclick="editSetting('guest')">Edit</button>
+  </div>
+  <div class="divider"></div>
+  <div class="section-title">Data</div>
+  <button class="btn btn-warning" onclick="exportData()">📤 Export Data (JSON)</button>
+  <button class="btn btn-danger mt8" onclick="clearData()">🗑️ Clear All Data</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottomnav">
+  <button class="nav-btn active" onclick="showPage('home', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+    Home
+  </button>
+  <button class="nav-btn" onclick="showPage('students', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    Students
+  </button>
+  <button class="nav-btn" onclick="showPage('rent', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    Rent
+  </button>
+  <button class="nav-btn" onclick="showPage('settings', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Settings
+  </button>
+</div>
+
+<!-- MODALS -->
+
+<!-- ADD STUDENT MODAL -->
+<div class="modal-overlay" id="modal-add-student">
+  <div class="modal">
+    <div class="modal-title">
+      Add New Student
+      <button class="close-btn" onclick="closeModal('modal-add-student')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="s-name" placeholder="Student name" />
+    </div>
+    <div class="form-group">
+      <label>Phone Number *</label>
+      <input type="tel" id="s-phone" placeholder="10 digit number" />
+    </div>
+    <div class="form-group">
+      <label>Home Address</label>
+      <textarea id="s-address" rows="2" placeholder="Village/City, District"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Emergency Contact</label>
+      <input type="tel" id="s-emergency" placeholder="Parent/Guardian number" />
+    </div>
+    <div class="form-group">
+      <label>Aadhar Number</label>
+      <input type="text" id="s-aadhar" placeholder="12 digit Aadhar" />
+    </div>
+    <div class="form-group">
+      <label>Room *</label>
+      <select id="s-room">
+        <option value="">Select Room</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Joining Date *</label>
+      <input type="date" id="s-joindate" />
+    </div>
+    <div class="form-group">
+      <label>Monthly Rent (₹) *</label>
+      <input type="number" id="s-rent" placeholder="e.g. 2400" />
+    </div>
+    <button class="btn btn-primary" onclick="saveStudent()">Save Student</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-add-student')">Cancel</button>
+  </div>
+</div>
+
+<!-- STUDENT DETAIL MODAL -->
+<div class="modal-overlay" id="modal-student-detail">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="detail-name">Student</span>
+      <button class="close-btn" onclick="closeModal('modal-student-detail')">×</button>
+    </div>
+    <div id="student-detail-body"></div>
+  </div>
+</div>
+
+<!-- ADD RENT MODAL -->
+<div class="modal-overlay" id="modal-add-rent">
+  <div class="modal">
+    <div class="modal-title">
+      Record Rent Payment
+      <button class="close-btn" onclick="closeModal('modal-add-rent')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Student</label>
+      <div id="rent-student-name" style="font-weight:600;padding:8px 0;"></div>
+    </div>
+    <div class="form-group">
+      <label>Amount (₹)</label>
+      <input type="number" id="rent-amount" placeholder="Enter amount" />
+    </div>
+    <div class="form-group">
+      <label>Payment Date</label>
+      <input type="date" id="rent-date" />
+    </div>
+    <div class="form-group">
+      <label>Note (optional)</label>
+      <input type="text" id="rent-note" placeholder="e.g. Cash, Online, Partial" />
+    </div>
+    <button class="btn btn-success" onclick="saveRent()">✓ Mark as Paid</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-add-rent')">Cancel</button>
+  </div>
+</div>
+
+<!-- GUEST CHARGE MODAL -->
+<div class="modal-overlay" id="modal-guest">
+  <div class="modal">
+    <div class="modal-title">
+      Guest Charge
+      <button class="close-btn" onclick="closeModal('modal-guest')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Student</label>
+      <select id="guest-student">
+        <option value="">Select Student</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Number of Nights</label>
+      <input type="number" id="guest-nights" value="1" min="1" />
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="guest-date" />
+    </div>
+    <div class="form-group">
+      <label>Guest Name (optional)</label>
+      <input type="text" id="guest-name" placeholder="Guest's name" />
+    </div>
+    <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:12px;">
+      <div class="flex-row">
+        <span class="text-muted">Charge:</span>
+        <span class="text-gold" id="guest-total">₹100</span>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveGuestCharge()">Add Charge</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-guest')">Cancel</button>
+  </div>
+</div>
+
+<!-- ROOM DETAIL MODAL -->
+<div class="modal-overlay" id="modal-room">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="room-modal-title">Room</span>
+      <button class="close-btn" onclick="closeModal('modal-room')">×</button>
+    </div>
+    <div id="room-modal-body"></div>
+  </div>
+</div>
+
+<!-- TRANSFER MODAL -->
+<div class="modal-overlay" id="modal-transfer">
+  <div class="modal">
+    <div class="modal-title">
+      Transfer Room
+      <button class="close-btn" onclick="closeModal('modal-transfer')">×</button>
+    </div>
+    <div class="form-group">
+      <label>New Room</label>
+      <select id="transfer-room">
+        <option value="">Select Room</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>New Rent (₹)</label>
+      <input type="number" id="transfer-rent" placeholder="New rent amount" />
+    </div>
+    <div class="form-group">
+      <label>Transfer Date</label>
+      <input type="date" id="transfer-date" />
+    </div>
+    <button class="btn btn-primary" onclick="confirmTransfer()">Confirm Transfer</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-transfer')">Cancel</button>
+  </div>
+</div>
+
+<!-- CLEARANCE MODAL -->
+<div class="modal-overlay" id="modal-clearance">
+  <div class="modal">
+    <div class="modal-title">
+      Final Clearance
+      <button class="close-btn" onclick="closeModal('modal-clearance')">×</button>
+    </div>
+    <div class="alert alert-warning">⚠️ Student will be marked as LEFT and room will be vacated.</div>
+    <div class="form-group">
+      <label>Remark</label>
+      <textarea id="clearance-remark" rows="3" placeholder="e.g. All dues clear. Left on good terms."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Leaving Date</label>
+      <input type="date" id="clearance-date" />
+    </div>
+    <button class="btn btn-danger" onclick="confirmClearance()">Confirm & Mark as Left</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-clearance')">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const ROOMS = {
+  // Floor 1 - Real order
+  101: { floor: 1, type: 'D', capacity: 2 },
+  102: { floor: 1, type: 'S', capacity: 1 },
+  103: { floor: 1, type: 'D', capacity: 2 },
+  104: { floor: 1, type: 'S', capacity: 1 },
+  105: { floor: 1, type: 'D', capacity: 2 },
+  106: { floor: 1, type: 'D', capacity: 2 },
+  107: { floor: 1, type: 'D', capacity: 2 },
+  // Floor 2 - Real order
+  201: { floor: 2, type: 'D', capacity: 2 },
+  202: { floor: 2, type: 'S', capacity: 1 },
+  203: { floor: 2, type: 'SD', capacity: 2 },
+  204: { floor: 2, type: 'D', capacity: 2 },
+  205: { floor: 2, type: 'S', capacity: 1 },
+  206: { floor: 2, type: 'S', capacity: 1 },
+  207: { floor: 2, type: 'D', capacity: 2 },
+  208: { floor: 2, type: 'D', capacity: 2 },
+  209: { floor: 2, type: 'D', capacity: 2 },
+};
+
+function loadData() {
+  return {
+    students: JSON.parse(localStorage.getItem('lodge_students') || '[]'),
+    settings: JSON.parse(localStorage.getItem('lodge_settings') || '{"srent":1700,"drent":2400,"guest":100}'),
+    guestCharges: JSON.parse(localStorage.getItem('lodge_guests') || '[]'),
+  };
+}
+
+function saveStudents(students) {
+  localStorage.setItem('lodge_students', JSON.stringify(students));
+}
+function saveSettings(settings) {
+  localStorage.setItem('lodge_settings', JSON.stringify(settings));
+}
+function saveGuestCharges(guests) {
+  localStorage.setItem('lodge_guests', JSON.stringify(guests));
+}
+
+// ===================== NAVIGATION =====================
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'home') renderHome();
+  if (name === 'students') renderStudents('active');
+  if (name === 'rent') renderRent();
+  if (name === 'settings') renderSettings();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ===================== HOME =====================
+function renderHome() {
+  const { students, settings } = loadData();
+  const active = students.filter(s => s.status === 'active');
+  
+  // Stats
+  const occupiedRooms = new Set(active.map(s => s.room)).size;
+  const totalRooms = Object.keys(ROOMS).length;
+  document.getElementById('stat-occupied').textContent = occupiedRooms;
+  document.getElementById('stat-vacant').textContent = totalRooms - occupiedRooms;
+  document.getElementById('stat-students').textContent = active.length;
+  
+  const now = new Date();
+  const monthIncome = active.reduce((sum, s) => {
+    const paid = (s.rentHistory || []).filter(r => {
+      const d = new Date(r.date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    return sum + paid.reduce((a, b) => a + b.amount, 0);
+  }, 0);
+  document.getElementById('stat-income').textContent = '₹' + monthIncome.toLocaleString('en-IN');
+  
+  // Topbar
+  document.getElementById('topbar-date').textContent = now.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+  document.getElementById('topbar-occupancy').textContent = active.length + '/' + 26 + ' students';
+
+  // Due alerts
+  const dueStudents = getDueStudents(students);
+  const alertDiv = document.getElementById('due-alerts');
+  if (dueStudents.length > 0) {
+    alertDiv.innerHTML = `<div class="alert alert-warning">⚠️ ${dueStudents.length} student(s) have rent due!</div>`;
+  } else {
+    alertDiv.innerHTML = '';
+  }
+
+  // Room grids
+  renderRoomGrid('floor1-grid', 1, active);
+  renderRoomGrid('floor2-grid', 2, active);
+}
+
+function renderRoomGrid(gridId, floor, activeStudents) {
+  const grid = document.getElementById(gridId);
+  const floorRooms = Object.entries(ROOMS).filter(([,r]) => r.floor === floor);
+  grid.innerHTML = floorRooms.map(([num, room]) => {
+    const occupants = activeStudents.filter(s => s.room == num);
+    const count = occupants.length;
+    const cap = room.capacity;
+    let cls = 'vacant';
+    if (count > 0 && count < cap) cls = 'occupied';
+    if (count >= cap) cls = 'full';
+    return `<div class="room-tile ${cls}" onclick="openRoomDetail(${num})">
+      <div class="rnum">${num}</div>
+      <div class="rtype">${room.type === 'SD' ? 'S/D' : room.type}</div>
+      <div class="rcap">${count}/${cap}</div>
+    </div>`;
+  }).join('');
+}
+
+function getDueStudents(students) {
+  const now = new Date();
+  return students.filter(s => {
+    if (s.status !== 'active') return false;
+    const join = new Date(s.joinDate);
+    const dueDay = join.getDate();
+    const lastPaid = (s.rentHistory || []).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+    if (!lastPaid) return true;
+    const lastPaidDate = new Date(lastPaid.date);
+    const monthDiff = (now.getFullYear() - lastPaidDate.getFullYear()) * 12 + now.getMonth() - lastPaidDate.getMonth();
+    return monthDiff >= 1 && now.getDate() >= dueDay;
+  });
+}
+
+// ===================== ROOM DETAIL =====================
+function openRoomDetail(num) {
+  const { students } = loadData();
+  const room = ROOMS[num];
+  const occupants = students.filter(s => s.status === 'active' && s.room == num);
+  
+  document.getElementById('room-modal-title').textContent = `Room ${num} (${room.type === 'SD' ? 'S/D' : room.type})`;
+  
+  let html = `<div class="text-muted" style="margin-bottom:12px;">Capacity: ${occupants.length}/${room.capacity}</div>`;
+  
+  if (occupants.length === 0) {
+    html += `<div class="alert alert-success">✓ Room is vacant</div>`;
+  } else {
+    occupants.forEach(s => {
+      html += `<div class="card" style="margin-bottom:10px;">
+        <div style="font-weight:600">${s.name}</div>
+        <div class="text-muted">📞 ${s.phone}</div>
+        <div class="text-muted">💰 ₹${s.rent}/month</div>
+        <button class="btn btn-primary" style="margin-top:8px;" onclick="closeModal('modal-room');openStudentDetail('${s.id}')">View Profile</button>
+      </div>`;
+    });
+  }
+  
+  document.getElementById('room-modal-body').innerHTML = html;
+  openModal('modal-room');
+}
+
+// ===================== ADD STUDENT =====================
+function openAddStudent() {
+  const { students, settings } = loadData();
+  const sel = document.getElementById('s-room');
+  sel.innerHTML = '<option value="">Select Room</option>';
+  
+  Object.entries(ROOMS).forEach(([num, room]) => {
+    const occ = students.filter(s => s.status === 'active' && s.room == num).length;
+    if (occ < room.capacity) {
+      const opt = document.createElement('option');
+      opt.value = num;
+      opt.textContent = `Room ${num} (${room.type === 'SD' ? 'S/D' : room.type}) - ${occ}/${room.capacity}`;
+      sel.appendChild(opt);
+    }
+  });
+  
+  document.getElementById('s-joindate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('s-name').value = '';
+  document.getElementById('s-phone').value = '';
+  document.getElementById('s-address').value = '';
+  document.getElementById('s-emergency').value = '';
+  document.getElementById('s-aadhar').value = '';
+  document.getElementById('s-rent').value = '';
+  
+  openModal('modal-add-student');
+}
+
+document.getElementById('s-room').addEventListener('change', function() {
+  const { settings } = loadData();
+  const num = this.value;
+  if (!num) return;
+  const room = ROOMS[num];
+  const defaultRent = room.type === 'S' ? settings.srent : settings.drent;
+  document.getElementById('s-rent').value = defaultRent;
+});
+
+function saveStudent() {
+  const name = document.getElementById('s-name').value.trim();
+  const phone = document.getElementById('s-phone').value.trim();
+  const room = document.getElementById('s-room').value;
+  const joinDate = document.getElementById('s-joindate').value;
+  const rent = document.getElementById('s-rent').value;
+  
+  if (!name || !phone || !room || !joinDate || !rent) {
+    alert('Please fill all required fields!');
+    return;
+  }
+  
+  const { students } = loadData();
+  const student = {
+    id: Date.now().toString(),
+    name,
+    phone,
+    address: document.getElementById('s-address').value,
+    emergency: document.getElementById('s-emergency').value,
+    aadhar: document.getElementById('s-aadhar').value,
+    room: parseInt(room),
+    joinDate,
+    rent: parseInt(rent),
+    status: 'active',
+    rentHistory: [],
+    transfers: [],
+    remark: '',
+  };
+  
+  students.push(student);
+  saveStudents(students);
+  closeModal('modal-add-student');
+  renderHome();
+  alert(`✅ ${name} added successfully!`);
+}
+
+// ===================== STUDENTS LIST =====================
+let currentFilter = 'active';
+let currentSearch = '';
+
+function renderStudents(filter) {
+  currentFilter = filter;
+  const { students } = loadData();
+  let list = students;
+  const active = students.filter(s => s.status === 'active');
+  const due = getDueStudents(students);
+  const dueIds = new Set(due.map(s => s.id));
+
+  if (filter === 'active') list = active;
+  if (filter === 'paid') list = active.filter(s => !dueIds.has(s.id));
+  if (filter === 'due') list = due;
+  
+  if (currentSearch) {
+    list = list.filter(s => s.name.toLowerCase().includes(currentSearch.toLowerCase()) || 
+                            s.phone.includes(currentSearch));
+  }
+  
+  const div = document.getElementById('student-list');
+  if (list.length === 0) {
+    div.innerHTML = '<div class="text-muted" style="text-align:center;padding:30px;">No students found</div>';
+    return;
+  }
+  
+  div.innerHTML = list.map(s => {
+    const isDue = getDueStudents(students).find(d => d.id === s.id);
+    const badge = s.status === 'left' 
+      ? '<span class="sbadge badge-left">Left</span>'
+      : isDue 
+        ? '<span class="sbadge badge-due">Rent Due</span>'
+        : '<span class="sbadge badge-paid">Paid</span>';
+    return `<div class="student-card" onclick="openStudentDetail('${s.id}')">
+      <div class="sname">${s.name}</div>
+      <div class="sinfo">Room ${s.room} · ₹${s.rent}/month · 📞 ${s.phone}</div>
+      ${badge}
+    </div>`;
+  }).join('');
+}
+
+function filterStudents(filter, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderStudents(filter);
+}
+
+function searchStudents(val) {
+  currentSearch = val;
+  renderStudents(currentFilter);
+}
+
+// ===================== STUDENT DETAIL =====================
+let currentStudentId = null;
+
+function openStudentDetail(id) {
+  currentStudentId = id;
+  const { students } = loadData();
+  const s = students.find(s => s.id === id);
+  if (!s) return;
+  
+  document.getElementById('detail-name').textContent = s.name;
+  
+  const isDue = getDueStudents(students).find(d => d.id === id);
+  
+  let html = `
+    <div class="card">
+      <div class="flex-row"><span class="text-muted">Room</span><span>Room ${s.room}</span></div>
+      <div class="flex-row mt8"><span class="text-muted">Rent</span><span class="text-gold">₹${s.rent}/month</span></div>
+      <div class="flex-row mt8"><span class="text-muted">Joined</span><span>${new Date(s.joinDate).toLocaleDateString('en-IN')}</span></div>
+      <div class="flex-row mt8"><span class="text-muted">Phone</span><span>${s.phone}</span></div>
+      ${s.emergency ? `<div class="flex-row mt8"><span class="text-muted">Emergency</span><span>${s.emergency}</span></div>` : ''}
+      ${s.address ? `<div class="flex-row mt8"><span class="text-muted">Address</span><span style="text-align:right;max-width:60%">${s.address}</span></div>` : ''}
+      ${s.aadhar ? `<div class="flex-row mt8"><span class="text-muted">Aadhar</span><span>${s.aadhar}</span></div>` : ''}
+    </div>`;
+  
+  if (s.status === 'active') {
+    if (isDue) html += `<div class="alert alert-warning">⚠️ Rent is due!</div>`;
+    html += `<button class="btn btn-success" onclick="openAddRent('${id}')">+ Record Rent Payment</button>`;
+    html += `<button class="btn btn-secondary mt8" onclick="openTransfer('${id}')">🔄 Transfer Room</button>`;
+    html += `<button class="btn btn-danger mt8" onclick="openClearance('${id}')">🚪 Final Clearance (Leaving)</button>`;
+  }
+  
+  if (s.remark) {
+    html += `<div class="card mt8"><div class="text-muted" style="font-size:12px;">REMARK</div><div style="margin-top:4px;">${s.remark}</div></div>`;
+  }
+  
+  // Rent History
+  if (s.rentHistory && s.rentHistory.length > 0) {
+    html += `<div class="section-title mt16">Rent History</div><div class="card">`;
+    s.rentHistory.slice().reverse().forEach(r => {
+      html += `<div class="rent-item">
+        <div>
+          <div style="font-size:13px;">${new Date(r.date).toLocaleDateString('en-IN')}</div>
+          ${r.note ? `<div class="text-muted">${r.note}</div>` : ''}
+        </div>
+        <div class="rent-amount">₹${r.amount}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  
+  // Transfer history
+  if (s.transfers && s.transfers.length > 0) {
+    html += `<div class="section-title mt16">Transfer History</div><div class="card">`;
+    s.transfers.forEach(t => {
+      html += `<div class="rent-item">
+        <div>
+          <div style="font-size:13px;">${new Date(t.date).toLocaleDateString('en-IN')}</div>
+          <div class="text-muted">Room ${t.fromRoom} → Room ${t.toRoom}</div>
+        </div>
+        <div class="text-gold">₹${t.newRent}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  
+  document.getElementById('student-detail-body').innerHTML = html;
+  openModal('modal-student-detail');
+}
+
+// ===================== RENT =====================
+function openAddRent(id) {
+  const { students } = loadData();
+  const s = students.find(s => s.id === id);
+  currentStudentId = id;
+  document.getElementById('rent-student-name').textContent = s.name + ' · Room ' + s.room;
+  document.getElementById('rent-amount').value = s.rent;
+  document.getElementById('rent-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rent-note').value = '';
+  closeModal('modal-student-detail');
+  openModal('modal-add-rent');
+}
+
+function saveRent() {
+  const amount = parseInt(document.getElementById('rent-amount').value);
+  const date = document.getElementById('rent-date').value;
+  const note = document.getElementById('rent-note').value;
+  
+  if (!amount || !date) { alert('Fill all fields!'); return; }
+  
+  const { students } = loadData();
+  const s = students.find(s => s.id === currentStudentId);
+  if (!s) return;
+  
+  s.rentHistory.push({ amount, date, note });
+  saveStudents(students);
+  closeModal('modal-add-rent');
+  renderHome();
+  alert(`✅ ₹${amount} recorded for ${s.name}!`);
+}
+
+function renderRent() {
+  const { students } = loadData();
+  const active = students.filter(s => s.status === 'active');
+  const now = new Date();
+  
+  let collected = 0, pending = 0;
+  active.forEach(s => {
+    const paid = (s.rentHistory || []).filter(r => {
+      const d = new Date(r.date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const paidAmt = paid.reduce((a, b) => a + b.amount, 0);
+    collected += paidAmt;
+    if (paidAmt < s.rent) pending += (s.rent - paidAmt);
+  });
+  
+  document.getElementById('rent-collected').textContent = '₹' + collected.toLocaleString('en-IN');
+  document.getElementById('rent-pending').textContent = '₹' + pending.toLocaleString('en-IN');
+  
+  const dueList = document.getElementById('rent-due-list');
+  const due = getDueStudents(students);
+  
+  if (due.length === 0) {
+    dueList.innerHTML = '<div class="alert alert-success">✓ All rents collected!</div>';
+    return;
+  }
+  
+  dueList.innerHTML = due.map(s => `
+    <div class="student-card" onclick="openStudentDetail('${s.id}')">
+      <div class="sname">${s.name}</div>
+      <div class="sinfo">Room ${s.room} · ₹${s.rent} due</div>
+      <span class="sbadge badge-due">Due</span>
+    </div>
+  `).join('');
+}
+
+// ===================== TRANSFER =====================
+function openTransfer(id) {
+  currentStudentId = id;
+  const { students } = loadData();
+  const s = students.find(s => s.id === id);
+  
+  const sel = document.getElementById('transfer-room');
+  sel.innerHTML = '<option value="">Select Room</option>';
+  Object.entries(ROOMS).forEach(([num, room]) => {
+    if (num == s.room) return;
+    const occ = students.filter(st => st.status === 'active' && st.room == num).length;
+    if (occ < room.capacity) {
+      const opt = document.createElement('option');
+      opt.value = num;
+      opt.textContent = `Room ${num} (${room.type === 'SD' ? 'S/D' : room.type}) - ${occ}/${room.capacity}`;
+      sel.appendChild(opt);
+    }
+  });
+  
+  document.getElementById('transfer-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('transfer-rent').value = s.rent;
+  closeModal('modal-student-detail');
+  openModal('modal-transfer');
+}
+
+function confirmTransfer() {
+  const newRoom = document.getElementById('transfer-room').value;
+  const newRent = parseInt(document.getElementById('transfer-rent').value);
+  const date = document.getElementById('transfer-date').value;
+  
+  if (!newRoom || !newRent || !date) { alert('Fill all fields!'); return; }
+  
+  const { students } = loadData();
+  const s = students.find(s => s.id === currentStudentId);
+  const oldRoom = s.room;
+  
+  s.transfers.push({ fromRoom: oldRoom, toRoom: parseInt(newRoom), newRent, date });
+  s.room = parseInt(newRoom);
+  s.rent = newRent;
+  
+  saveStudents(students);
+  closeModal('modal-transfer');
+  renderHome();
+  alert(`✅ Transferred from Room ${oldRoom} to Room ${newRoom}!`);
+}
+
+// ===================== CLEARANCE =====================
+function openClearance(id) {
+  currentStudentId = id;
+  document.getElementById('clearance-remark').value = '';
+  document.getElementById('clearance-date').value = new Date().toISOString().split('T')[0];
+  closeModal('modal-student-detail');
+  openModal('modal-clearance');
+}
+
+function confirmClearance() {
+  const remark = document.getElementById('clearance-remark').value.trim();
+  const date = document.getElementById('clearance-date').value;
+  
+  if (!remark) { alert('Please add a remark!'); return; }
+  
+  const { students } = loadData();
+  const s = students.find(s => s.id === currentStudentId);
+  s.status = 'left';
+  s.remark = remark + ' (Left: ' + new Date(date).toLocaleDateString('en-IN') + ')';
+  s.leaveDate = date;
+  
+  saveStudents(students);
+  closeModal('modal-clearance');
+  renderHome();
+  alert(`✅ ${s.name} marked as left. Room ${s.room} is now vacant.`);
+}
+
+// ===================== GUEST CHARGE =====================
+function openGuestCharge() {
+  const { students, settings } = loadData();
+  const active = students.filter(s => s.status === 'active');
+  const sel = document.getElementById('guest-student');
+  sel.innerHTML = '<option value="">Select Student</option>';
+  active.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.name + ' (Room ' + s.room + ')';
+    sel.appendChild(opt);
+  });
+  document.getElementById('guest-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('guest-nights').value = 1;
+  document.getElementById('guest-name').value = '';
+  document.getElementById('guest-total').textContent = '₹' + settings.guest;
+  openModal('modal-guest');
+}
+
+document.getElementById('guest-nights').addEventListener('input', function() {
+  const { settings } = loadData();
+  document.getElementById('guest-total').textContent = '₹' + (this.value * settings.guest);
+});
+
+function saveGuestCharge() {
+  const studentId = document.getElementById('guest-student').value;
+  const nights = parseInt(document.getElementById('guest-nights').value);
+  const date = document.getElementById('guest-date').value;
+  const guestName = document.getElementById('guest-name').value;
+  const { settings, guestCharges } = loadData();
+  
+  if (!studentId || !nights || !date) { alert('Fill all fields!'); return; }
+  
+  guestCharges.push({ studentId, nights, date, guestName, amount: nights * settings.guest });
+  saveGuestCharges(guestCharges);
+  closeModal('modal-guest');
+  alert(`✅ Guest charge of ₹${nights * settings.guest} added!`);
+}
+
+// ===================== SETTINGS =====================
+function renderSettings() {
+  const { settings } = loadData();
+  document.getElementById('setting-srent').textContent = settings.srent;
+  document.getElementById('setting-drent').textContent = settings.drent;
+  document.getElementById('setting-guest').textContent = settings.guest;
+}
+
+function editSetting(key) {
+  const { settings } = loadData();
+  const labels = { srent: 'S Room Default Rent', drent: 'D Room Default Rent', guest: 'Guest Charge/Night' };
+  const val = prompt(`Enter new value for ${labels[key]}:`, settings[key]);
+  if (val && !isNaN(val)) {
+    settings[key] = parseInt(val);
+    saveSettings(settings);
+    renderSettings();
+  }
+}
+
+function exportData() {
+  const data = loadData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lodge-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+}
+
+function clearData() {
+  if (confirm('Are you sure? This will delete ALL data permanently!')) {
+    if (confirm('Last warning! Delete everything?')) {
+      localStorage.clear();
+      location.reload();
+    }
+  }
+}
+
+// ===================== INIT =====================
+renderHome();
+</script>
+</body>
+</html>
